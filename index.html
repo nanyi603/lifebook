@@ -84,8 +84,15 @@ function build(){
 }
 function setVal(i,v){
   if(!D[i])D[i]={n:"",v:"",t:0};
-  if(D[i].v===v){D[i].v="";D[i].t=0}
-  else{D[i].v=v;D[i].t=(v==="risk")?Date.now():0}
+  if(D[i].v===v){D[i].v="";D[i].t=0;D[i].hrs=0}
+  else{
+    D[i].v=v;
+    if(v==="risk"){
+      var h=prompt("倒计时小时数","168");
+      if(!h||isNaN(h)||h<=0){D[i].v="";D[i].t=0;D[i].hrs=0;build();updateStats();return}
+      D[i].hrs=parseFloat(h);D[i].t=Date.now()
+    }else D[i].t=0
+  }
   var row=document.getElementById("rw-"+i);
   row.className="row";
   if(D[i].v==="risk")row.className+=" risk";
@@ -99,18 +106,19 @@ function updateTimer(i){
   var d=D[i]||{},el=document.getElementById("tm-"+i);
   if(!el)return;
   if(d.v!=="risk"||!d.t){el.textContent="";return}
-  var r=d.t+604800000-Date.now();
+  var hrs=d.hrs||168;var r=d.t+hrs*3600000-Date.now();
   if(r<=0){el.textContent="已到期";return}
   var days=Math.floor(r/86400000);
-  var hrs=Math.floor((r%86400000)/3600000);
+  var hrs2=Math.floor((r%86400000)/3600000);
   var min=Math.floor((r%3600000)/60000);
   var sec=Math.floor((r%60000)/1000);
-  el.textContent=days+"天 "+p(hrs)+":"+p(min)+":"+p(sec)
+  if(days>0)el.textContent=days+"天 "+p(hrs2)+":"+p(min)+":"+p(sec);
+  else el.textContent=p(hrs2)+":"+p(min)+":"+p(sec)
 }
 function p(n){return n<10?"0"+n:n}
 function resetRisk(i){
   if(!D[i]||D[i].v!=="risk")return;
-  D[i].v="";D[i].t=0;
+  D[i].v="";D[i].t=0;D[i].hrs=0;
   var row=document.getElementById("rw-"+i);
   row.className="row";
   document.getElementById("l-"+i).className="tag login";
@@ -154,7 +162,7 @@ function exportData(){
     else if(d.v==="kicked")v="被顶";
     else if(d.v==="risk"){
       v="高风险";
-      if(d.t){v+=" [到期: "+new Date(d.t+604800000).toLocaleString()+"]"}
+      if(d.t){var hrs3=d.hrs||168;v+=" [到期: "+new Date(d.t+hrs3*3600000).toLocaleString()+"]"}
     }else v="未标记";
     txt+=(i+1)+". "+n+" -> "+v+"\n"
   }
