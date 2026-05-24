@@ -15,7 +15,7 @@ h1{text-align:center;margin-bottom:4px;font-size:28px;color:#c62828;letter-spaci
 .row{display:flex;align-items:center;gap:8px;padding:8px 10px;margin-bottom:3px;background:#111;border-radius:6px;border:1px solid #1a1a1a;font-size:13px}
 .row.risk{border-color:#4a0000;background:#1a0505}
 .num{color:#444;font-size:11px;width:20px;text-align:center;flex-shrink:0}.num.risk-num{color:#4caf50;cursor:pointer}
-.name-input{flex:1;padding:6px 8px;border:1px solid #222;border-radius:4px;background:#0a0a0a;color:#ccc;font-size:13px;outline:none;min-width:80px}
+.name-input{flex:2;padding:6px 8px;border:1px solid #222;border-radius:4px;background:#0a0a0a;color:#ccc;font-size:13px;outline:none;min-width:140px}
 .name-input:focus{border-color:#c62828}
 .timer{color:#ff5252;font-size:12px;min-width:104px;text-align:center;font-family:'Consolas',monospace}
 .tag-group{display:flex;gap:2px;flex-shrink:0}
@@ -54,21 +54,30 @@ h1{text-align:center;margin-bottom:4px;font-size:28px;color:#c62828;letter-spaci
 <script>
 var T=30,D=[];
 try{D=JSON.parse(localStorage.getItem("lb")||"[]")}catch(e){D=[]}
+for(var _i=0;_i<D.length;_i++){if(D[_i]&&D[_i].v!==undefined){var _d=D[_i];_d.login=(_d.v==="login");_d.kicked=(_d.v==="kicked");_d.risk=(_d.v==="risk");if(!_d.risk){_d.t=0;_d.hrs=0}delete _d.v}}
 function esc(s){return s.replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+function migrate(d){
+  if(!d||d.v===undefined)return;
+  d.login=(d.v==="login");d.kicked=(d.v==="kicked");d.risk=(d.v==="risk");
+  if(!d.risk){d.t=0;d.hrs=0}
+  delete d.v
+}
 function build(){
   var l=document.getElementById("list"),h="";
   for(var i=0;i<T;i++){
-    var d=D[i]||{},rc="row";
-    if(d.v==="risk")rc+=" risk";
+    var d=D[i]||{};
+    migrate(d);
+    var rc="row";
+    if(d.risk)rc+=" risk";
     h+="<div class='"+rc+"' id='rw-"+i+"'>";
-    var nc='num';if(d.v==="risk")nc+=' risk-num';
+    var nc='num';if(d.risk)nc+=' risk-num';
     h+="<span class='"+nc+"' id='num-"+i+"'>"+(i+1)+"</span>";
     h+="<input class='name-input' id='nm-"+i+"' placeholder='人名' value='"+esc(d.n||"")+"'>";
     h+="<span class='timer' id='tm-"+i+"'></span>";
     h+="<div class='tag-group'>";
-    h+="<button class='tag login"+(d.v==="login"?" active":"")+"' id='l-"+i+"'>登录</button>";
-    h+="<button class='tag kicked"+(d.v==="kicked"?" active":"")+"' id='k-"+i+"'>被顶</button>";
-    h+="<button class='tag risk"+(d.v==="risk"?" active":"")+"' id='r-"+i+"'>高风险</button>";
+    h+="<button class='tag login"+(d.login?" active":"")+"' id='l-"+i+"'>登录</button>";
+    h+="<button class='tag kicked"+(d.kicked?" active":"")+"' id='k-"+i+"'>被顶</button>";
+    h+="<button class='tag risk"+(d.risk?" active":"")+"' id='r-"+i+"'>高风险</button>";
     h+="</div></div>";
   }
   l.innerHTML=h;
@@ -83,29 +92,31 @@ function build(){
   updateAllTimers()
 }
 function setVal(i,v){
-  if(!D[i])D[i]={n:"",v:"",t:0};
-  if(D[i].v===v){D[i].v="";D[i].t=0;D[i].hrs=0}
-  else{
-    D[i].v=v;
-    if(v==="risk"){
-      var h=prompt("倒计时小时数","168");
-      if(!h||isNaN(h)||h<=0){D[i].v="";D[i].t=0;D[i].hrs=0;build();updateStats();return}
+  if(!D[i])D[i]={n:"",login:false,kicked:false,risk:false,t:0,hrs:0};
+  var active=(D[i].login?1:0)+(D[i].kicked?1:0)+(D[i].risk?1:0);
+  var turningOn=!D[i][v];
+  if(turningOn&&active>=2)return;
+  D[i][v]=!D[i][v];
+  if(v==="risk"){
+    if(D[i].risk){
+      var h=prompt("倒计时小时数",D[i].hrs||"168");
+      if(!h||isNaN(h)||h<=0){D[i].risk=false;build();updateStats();save();return}
       D[i].hrs=parseFloat(h);D[i].t=Date.now()
-    }else D[i].t=0
+    }else{D[i].t=0;D[i].hrs=0}
   }
   var row=document.getElementById("rw-"+i);
   row.className="row";
-  if(D[i].v==="risk")row.className+=" risk";
-  document.getElementById("l-"+i).className="tag login"+(D[i].v==="login"?" active":"");
-  document.getElementById("k-"+i).className="tag kicked"+(D[i].v==="kicked"?" active":"");
-  document.getElementById("r-"+i).className="tag risk"+(D[i].v==="risk"?" active":"");
-  document.getElementById("num-"+i).className=D[i].v==="risk"?"num risk-num":"num";
-  updateTimer(i);updateStats()
+  if(D[i].risk)row.className+=" risk";
+  document.getElementById("l-"+i).className="tag login"+(D[i].login?" active":"");
+  document.getElementById("k-"+i).className="tag kicked"+(D[i].kicked?" active":"");
+  document.getElementById("r-"+i).className="tag risk"+(D[i].risk?" active":"");
+  document.getElementById("num-"+i).className=D[i].risk?"num risk-num":"num";
+  updateTimer(i);updateStats();save()
 }
 function updateTimer(i){
   var d=D[i]||{},el=document.getElementById("tm-"+i);
   if(!el)return;
-  if(d.v!=="risk"||!d.t){el.textContent="";return}
+  if(!d.risk||!d.t){el.textContent="";return}
   var hrs=d.hrs||168;var r=d.t+hrs*3600000-Date.now();
   if(r<=0){el.textContent="已到期";return}
   var days=Math.floor(r/86400000);
@@ -117,25 +128,22 @@ function updateTimer(i){
 }
 function p(n){return n<10?"0"+n:n}
 function resetRisk(i){
-  if(!D[i]||D[i].v!=="risk")return;
-  D[i].v="";D[i].t=0;D[i].hrs=0;
-  var row=document.getElementById("rw-"+i);
-  row.className="row";
-  document.getElementById("l-"+i).className="tag login";
-  document.getElementById("k-"+i).className="tag kicked";
+  if(!D[i]||!D[i].risk)return;
+  D[i].risk=false;D[i].t=0;D[i].hrs=0;
+  document.getElementById("rw-"+i).className="row";
   document.getElementById("r-"+i).className="tag risk";
   document.getElementById("num-"+i).className="num";
   document.getElementById("tm-"+i).textContent="";
-  updateStats()
+  updateStats();save()
 }
 function updateAllTimers(){for(var i=0;i<T;i++)updateTimer(i)}
 function updateStats(){
   var L=0,K=0,R=0;
   for(var i=0;i<T;i++){
     if(!D[i])continue;
-    if(D[i].v==="login")L++;
-    else if(D[i].v==="kicked")K++;
-    else if(D[i].v==="risk")R++
+    if(D[i].login)L++;
+    if(D[i].kicked)K++;
+    if(D[i].risk)R++
   }
   document.getElementById("login-count").textContent=L;
   document.getElementById("kick-count").textContent=K;
@@ -144,7 +152,7 @@ function updateStats(){
 }
 function save(){
   for(var i=0;i<T;i++){
-    if(!D[i])D[i]={n:"",v:"",t:0};
+    if(!D[i])D[i]={n:"",login:false,kicked:false,risk:false,t:0,hrs:0};
     var el=document.getElementById("nm-"+i);
     if(el)D[i].n=el.value
   }
@@ -157,14 +165,16 @@ function exportData(){
   save();
   var txt="=== 生死簿 ===\n导出: "+new Date().toLocaleString()+"\n\n";
   for(var i=0;i<T;i++){
-    var d=D[i]||{},n=d.n||"(空)",v="";
-    if(d.v==="login")v="登录";
-    else if(d.v==="kicked")v="被顶";
-    else if(d.v==="risk"){
-      v="高风险";
-      if(d.t){var hrs3=d.hrs||168;v+=" [到期: "+new Date(d.t+hrs3*3600000).toLocaleString()+"]"}
-    }else v="未标记";
-    txt+=(i+1)+". "+n+" -> "+v+"\n"
+    var d=D[i]||{},n=d.n||"(空)",v=[];
+    if(d.login)v.push("登录");
+    if(d.kicked)v.push("被顶");
+    if(d.risk){
+      var s="高风险";
+      if(d.t){var hrs3=d.hrs||168;s+=" [到期: "+new Date(d.t+hrs3*3600000).toLocaleString()+"]"}
+      v.push(s)
+    }
+    if(v.length===0)v.push("未标记");
+    txt+=(i+1)+". "+n+" -> "+v.join("+")+"\n"
   }
   var b=new Blob([txt],{type:"text/plain;charset=utf-8"});
   var a=document.createElement("a");
@@ -181,7 +191,7 @@ function resetAll(){
 }
 build();
 updateStats();
-setInterval(function(){for(var i=0;i<T;i++){if(D[i]&&D[i].v==="risk"&&D[i].t)updateTimer(i)}},1000);
+setInterval(function(){for(var i=0;i<T;i++){if(D[i]&&D[i].risk&&D[i].t)updateTimer(i)}},1000);
 </script>
 </body>
 </html>
