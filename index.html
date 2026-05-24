@@ -41,7 +41,7 @@ h1{text-align:center;margin-bottom:4px;font-size:28px;color:#c62828;letter-spaci
   <span style="color:#81c784">登录 <strong id="login-count">0</strong></span>
   <span style="color:#ef5350">被顶 <strong id="kick-count">0</strong></span>
   <span style="color:#ff9800">高风险 <strong id="risk-count">0</strong></span>
-  <span style="color:#666">未标记 <strong id="none-count">30</strong></span>
+  <span style="color:#666">未标记 <strong id="none-count">40</strong></span>
 </div>
 <div id="list"></div>
 <div class="btn-row">
@@ -53,7 +53,7 @@ h1{text-align:center;margin-bottom:4px;font-size:28px;color:#c62828;letter-spaci
 <p class="msg" id="msg">已保存</p>
 </div>
 <script>
-var T=30,D=[];
+var T=40,D=[];
 try{D=JSON.parse(localStorage.getItem("lb")||"[]")}catch(e){D=[]}
 for(var _i=0;_i<D.length;_i++){if(D[_i]&&D[_i].v!==undefined){var _d=D[_i];_d.login=(_d.v==="login");_d.kicked=(_d.v==="kicked");_d.risk=(_d.v==="risk");if(!_d.risk){_d.t=0;_d.hrs=0}delete _d.v}}
 function esc(s){return s.replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
