@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>生死簿</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Microsoft YaHei',sans-serif;background:#0d0d0d;color:#ccc;min-height:100vh;padding:20px}
+.container{max-width:780px;margin:0 auto}
+h1{text-align:center;margin-bottom:4px;font-size:28px;color:#c62828;letter-spacing:8px}
+.subtitle{text-align:center;color:#555;margin-bottom:16px;font-size:12px}
+.stats{text-align:center;margin-bottom:16px;font-size:13px;color:#888}
+.stats span{margin:0 10px}
+.row{display:flex;align-items:center;gap:8px;padding:8px 10px;margin-bottom:3px;background:#111;border-radius:6px;border:1px solid #1a1a1a;font-size:13px}
+.row.risk{border-color:#4a0000;background:#1a0505}
+.num{color:#444;font-size:11px;width:20px;text-align:center;flex-shrink:0}
+.name-input{flex:1;padding:6px 8px;border:1px solid #222;border-radius:4px;background:#0a0a0a;color:#ccc;font-size:13px;outline:none;min-width:80px}
+.name-input:focus{border-color:#c62828}
+.timer{color:#ff5252;font-size:12px;min-width:104px;text-align:center;font-family:'Consolas',monospace}
+.tag-group{display:flex;gap:2px;flex-shrink:0}
+.tag{padding:5px 10px;border:1px solid #222;background:#0a0a0a;color:#555;cursor:pointer;font-size:12px;border-radius:0;white-space:nowrap;user-select:none}
+.tag:first-child{border-radius:4px 0 0 4px}
+.tag:last-child{border-radius:0 4px 4px 0}
+.tag.login.active{background:#1b5e20;border-color:#388e3c;color:#a5d6a7}
+.tag.kicked.active{background:#b71c1c;border-color:#e53935;color:#ef9a9a}
+.tag.risk.active{background:#e65100;border-color:#ff6d00;color:#ffcc80}
+.tag:hover:not(.active){border-color:#444;color:#999}
+.btn-row{display:flex;gap:10px;justify-content:center;margin-top:20px}
+.btn{padding:8px 20px;border:1px solid #333;border-radius:4px;cursor:pointer;font-size:13px;background:#1a1a1a;color:#aaa}
+.btn:hover{border-color:#555;color:#fff}
+.msg{text-align:center;margin-top:10px;font-size:13px;color:#4caf50;opacity:0;transition:opacity .3s}
+.msg.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>生 死 簿</h1>
+<p class="subtitle">登录 / 被顶 / 高风险（七天倒计时）</p>
+<div class="stats">
+  <span style="color:#81c784">登录 <strong id="login-count">0</strong></span>
+  <span style="color:#ef5350">被顶 <strong id="kick-count">0</strong></span>
+  <span style="color:#ff9800">高风险 <strong id="risk-count">0</strong></span>
+  <span style="color:#666">未标记 <strong id="none-count">30</strong></span>
+</div>
+<div id="list"></div>
+<div class="btn-row">
+  <button class="btn" onclick="save()">保存</button>
+  <button class="btn" onclick="exportData()">导出</button>
+  <button class="btn" onclick="resetAll()">清空</button>
+</div>
+<p class="msg" id="msg">已保存</p>
+</div>
+<script>
+var T=30,D=[];
+try{D=JSON.parse(localStorage.getItem("lb")||"[]")}catch(e){D=[]}
+function esc(s){return s.replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+function build(){
+  var l=document.getElementById("list"),h="";
+  for(var i=0;i<T;i++){
+    var d=D[i]||{},rc="row";
+    if(d.v==="risk")rc+=" risk";
+    h+="<div class='"+rc+"' id='rw-"+i+"'>";
+    h+="<span class='num'>"+(i+1)+"</span>";
+    h+="<input class='name-input' id='nm-"+i+"' placeholder='人名' value='"+esc(d.n||"")+"'>";
+    h+="<span class='timer' id='tm-"+i+"'></span>";
+    h+="<div class='tag-group'>";
+    h+="<button class='tag login"+(d.v==="login"?" active":"")+"' id='l-"+i+"'>登录</button>";
+    h+="<button class='tag kicked"+(d.v==="kicked"?" active":"")+"' id='k-"+i+"'>被顶</button>";
+    h+="<button class='tag risk"+(d.v==="risk"?" active":"")+"' id='r-"+i+"'>高风险</button>";
+    h+="</div></div>";
+  }
+  l.innerHTML=h;
+  for(var i=0;i<T;i++){
+    (function(j){
+      document.getElementById("l-"+j).onclick=function(){setVal(j,"login")};
+      document.getElementById("k-"+j).onclick=function(){setVal(j,"kicked")};
+      document.getElementById("r-"+j).onclick=function(){setVal(j,"risk")};
+    })(i)
+  }
+  updateAllTimers()
+}
+function setVal(i,v){
+  if(!D[i])D[i]={n:"",v:"",t:0};
+  if(D[i].v===v){D[i].v="";D[i].t=0}
+  else{D[i].v=v;D[i].t=(v==="risk")?Date.now():0}
+  var row=document.getElementById("rw-"+i);
+  row.className="row";
+  if(D[i].v==="risk")row.className+=" risk";
+  document.getElementById("l-"+i).className="tag login"+(D[i].v==="login"?" active":"");
+  document.getElementById("k-"+i).className="tag kicked"+(D[i].v==="kicked"?" active":"");
+  document.getElementById("r-"+i).className="tag risk"+(D[i].v==="risk"?" active":"");
+  updateTimer(i);updateStats()
+}
+function updateTimer(i){
+  var d=D[i]||{},el=document.getElementById("tm-"+i);
+  if(!el)return;
+  if(d.v!=="risk"||!d.t){el.textContent="";return}
+  var r=d.t+604800000-Date.now();
+  if(r<=0){el.textContent="已到期";return}
+  var days=Math.floor(r/86400000);
+  var hrs=Math.floor((r%86400000)/3600000);
+  var min=Math.floor((r%3600000)/60000);
+  var sec=Math.floor((r%60000)/1000);
+  el.textContent=days+"天 "+p(hrs)+":"+p(min)+":"+p(sec)
+}
+function p(n){return n<10?"0"+n:n}
+function updateAllTimers(){for(var i=0;i<T;i++)updateTimer(i)}
+function updateStats(){
+  var L=0,K=0,R=0;
+  for(var i=0;i<T;i++){
+    if(!D[i])continue;
+    if(D[i].v==="login")L++;
+    else if(D[i].v==="kicked")K++;
+    else if(D[i].v==="risk")R++
+  }
+  document.getElementById("login-count").textContent=L;
+  document.getElementById("kick-count").textContent=K;
+  document.getElementById("risk-count").textContent=R;
+  document.getElementById("none-count").textContent=T-L-K-R
+}
+function save(){
+  for(var i=0;i<T;i++){
+    if(!D[i])D[i]={n:"",v:"",t:0};
+    var el=document.getElementById("nm-"+i);
+    if(el)D[i].n=el.value
+  }
+  localStorage.setItem("lb",JSON.stringify(D));
+  var m=document.getElementById("msg");
+  m.classList.add("show");
+  setTimeout(function(){m.classList.remove("show")},1500)
+}
+function exportData(){
+  save();
+  var txt="=== 生死簿 ===\n导出: "+new Date().toLocaleString()+"\n\n";
+  for(var i=0;i<T;i++){
+    var d=D[i]||{},n=d.n||"(空)",v="";
+    if(d.v==="login")v="登录";
+    else if(d.v==="kicked")v="被顶";
+    else if(d.v==="risk"){
+      v="高风险";
+      if(d.t){v+=" [到期: "+new Date(d.t+604800000).toLocaleString()+"]"}
+    }else v="未标记";
+    txt+=(i+1)+". "+n+" -> "+v+"\n"
+  }
+  var b=new Blob([txt],{type:"text/plain;charset=utf-8"});
+  var a=document.createElement("a");
+  a.href=URL.createObjectURL(b);
+  a.download="生死簿_"+new Date().toISOString().slice(0,10)+".txt";
+  a.click()
+}
+function resetAll(){
+  if(!confirm("清空生死簿？"))return;
+  D=[];
+  localStorage.removeItem("lb");
+  build();
+  updateStats()
+}
+build();
+updateStats();
+setInterval(function(){for(var i=0;i<T;i++){if(D[i]&&D[i].v==="risk"&&D[i].t)updateTimer(i)}},1000);
+</script>
+</body>
+</html>
