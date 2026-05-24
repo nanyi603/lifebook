@@ -93,7 +93,7 @@ function build(){
   updateAllTimers()
 }
 function setVal(i,v){
-  if(!D[i])D[i]={n:"",login:false,kicked:false,risk:false,t:0,hrs:0};
+  if(!D[i])D[i]={n:"",login:false,kicked:false,risk:false,t:0,hrs:0,target:0};
   var active=(D[i].login?1:0)+(D[i].kicked?1:0)+(D[i].risk?1:0);
   var turningOn=!D[i][v];
   if(turningOn&&active>=2)return;
@@ -102,11 +102,19 @@ function setVal(i,v){
   D[i][v]=!D[i][v];
   if(v==="risk"){
     if(D[i].risk){
-      var h=prompt("选择倒计时天数 (1-7)","7");
-      var d=parseInt(h);
-      if(!d||d<1||d>7){D[i].risk=false;build();updateStats();save();return}
-      D[i].hrs=d*24;D[i].t=Date.now()
-    }else{D[i].t=0;D[i].hrs=0}
+      var td=new Date();td.setHours(0,0,0,0);
+      var wds=["日","一","二","三","四","五","六"];
+      var msg="选择到期日期:\n今天 "+(td.getMonth()+1)+"月"+td.getDate()+"日\n\n";
+      for(var j=1;j<=7;j++){
+        var dt=new Date(td.getTime()+j*86400000);
+        msg+=j+". "+(dt.getMonth()+1)+"月"+dt.getDate()+"日 (周"+wds[dt.getDay()]+")\n"
+      }
+      msg+="\n输入序号 1-7:";
+      var c=parseInt(prompt(msg,"7"));
+      if(!c||c<1||c>7){D[i].risk=false;build();updateStats();save();return}
+      D[i].target=new Date(td.getTime()+c*86400000).getTime();
+      D[i].t=Date.now()
+    }else{D[i].t=0;D[i].target=0}
   }
   var row=document.getElementById("rw-"+i);
   row.className="row";
@@ -121,7 +129,7 @@ function updateTimer(i){
   var d=D[i]||{},el=document.getElementById("tm-"+i);
   if(!el)return;
   if(!d.risk||!d.t){el.textContent="";return}
-  var hrs=d.hrs||168;var r=d.t+hrs*3600000-Date.now();
+  var tgt=d.target||(d.t+(d.hrs||168)*3600000);var r=tgt-Date.now();
   if(r<=0){el.textContent="已到期";return}
   var days=Math.floor(r/86400000);
   var hrs2=Math.floor((r%86400000)/3600000);
@@ -133,7 +141,7 @@ function updateTimer(i){
 function p(n){return n<10?"0"+n:n}
 function resetRisk(i){
   if(!D[i]||!D[i].risk)return;
-  D[i].risk=false;D[i].t=0;D[i].hrs=0;
+  D[i].risk=false;D[i].t=0;D[i].hrs=0;D[i].target=0;
   document.getElementById("rw-"+i).className="row";
   document.getElementById("r-"+i).className="tag risk";
   document.getElementById("num-"+i).className="num";
@@ -156,7 +164,7 @@ function updateStats(){
 }
 function save(){
   for(var i=0;i<T;i++){
-    if(!D[i])D[i]={n:"",login:false,kicked:false,risk:false,t:0,hrs:0};
+    if(!D[i])D[i]={n:"",login:false,kicked:false,risk:false,t:0,hrs:0,target:0};
     var el=document.getElementById("nm-"+i);
     if(el)D[i].n=el.value
   }
@@ -174,7 +182,7 @@ function exportData(){
     if(d.kicked)v.push("被顶");
     if(d.risk){
       var s="高风险";
-      if(d.t){var hrs3=d.hrs||168;s+=" [到期: "+new Date(d.t+hrs3*3600000).toLocaleString()+"]"}
+      if(d.t){var tgt2=d.target||(d.t+(d.hrs||168)*3600000);s+=" [到期: "+new Date(tgt2).toLocaleString()+"]"}
       v.push(s)
     }
     if(v.length===0)v.push("未标记");
