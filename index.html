@@ -14,7 +14,7 @@ h1{text-align:center;margin-bottom:4px;font-size:28px;color:#c62828;letter-spaci
 .stats span{margin:0 10px}
 .row{display:flex;align-items:center;gap:8px;padding:8px 10px;margin-bottom:3px;background:#111;border-radius:6px;border:1px solid #1a1a1a;font-size:13px}
 .row.risk{border-color:#4a0000;background:#1a0505}
-.num{color:#444;font-size:11px;width:20px;text-align:center;flex-shrink:0}
+.num{color:#444;font-size:11px;width:20px;text-align:center;flex-shrink:0}.num.risk-num{color:#4caf50;cursor:pointer}
 .name-input{flex:1;padding:6px 8px;border:1px solid #222;border-radius:4px;background:#0a0a0a;color:#ccc;font-size:13px;outline:none;min-width:80px}
 .name-input:focus{border-color:#c62828}
 .timer{color:#ff5252;font-size:12px;min-width:104px;text-align:center;font-family:'Consolas',monospace}
@@ -61,7 +61,8 @@ function build(){
     var d=D[i]||{},rc="row";
     if(d.v==="risk")rc+=" risk";
     h+="<div class='"+rc+"' id='rw-"+i+"'>";
-    h+="<span class='num'>"+(i+1)+"</span>";
+    var nc='num';if(d.v==="risk")nc+=' risk-num';
+    h+="<span class='"+nc+"' id='num-"+i+"'>"+(i+1)+"</span>";
     h+="<input class='name-input' id='nm-"+i+"' placeholder='人名' value='"+esc(d.n||"")+"'>";
     h+="<span class='timer' id='tm-"+i+"'></span>";
     h+="<div class='tag-group'>";
@@ -76,6 +77,7 @@ function build(){
       document.getElementById("l-"+j).onclick=function(){setVal(j,"login")};
       document.getElementById("k-"+j).onclick=function(){setVal(j,"kicked")};
       document.getElementById("r-"+j).onclick=function(){setVal(j,"risk")};
+      document.getElementById("num-"+j).onclick=function(){resetRisk(j)};
     })(i)
   }
   updateAllTimers()
@@ -90,6 +92,7 @@ function setVal(i,v){
   document.getElementById("l-"+i).className="tag login"+(D[i].v==="login"?" active":"");
   document.getElementById("k-"+i).className="tag kicked"+(D[i].v==="kicked"?" active":"");
   document.getElementById("r-"+i).className="tag risk"+(D[i].v==="risk"?" active":"");
+  document.getElementById("num-"+i).className=D[i].v==="risk"?"num risk-num":"num";
   updateTimer(i);updateStats()
 }
 function updateTimer(i){
@@ -105,6 +108,18 @@ function updateTimer(i){
   el.textContent=days+"天 "+p(hrs)+":"+p(min)+":"+p(sec)
 }
 function p(n){return n<10?"0"+n:n}
+function resetRisk(i){
+  if(!D[i]||D[i].v!=="risk")return;
+  D[i].v="";D[i].t=0;
+  var row=document.getElementById("rw-"+i);
+  row.className="row";
+  document.getElementById("l-"+i).className="tag login";
+  document.getElementById("k-"+i).className="tag kicked";
+  document.getElementById("r-"+i).className="tag risk";
+  document.getElementById("num-"+i).className="num";
+  document.getElementById("tm-"+i).textContent="";
+  updateStats()
+}
 function updateAllTimers(){for(var i=0;i<T;i++)updateTimer(i)}
 function updateStats(){
   var L=0,K=0,R=0;
