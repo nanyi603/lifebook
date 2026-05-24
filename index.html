@@ -47,7 +47,8 @@ h1{text-align:center;margin-bottom:4px;font-size:28px;color:#c62828;letter-spaci
 <div class="btn-row">
   <button class="btn" onclick="save()">保存</button>
   <button class="btn" onclick="exportData()">导出</button>
-  <button class="btn" onclick="resetAll()">清空</button>
+  <button class="btn" onclick="importData()">导入</button>
+	  <button class="btn" onclick="resetAll()">清空</button>
 </div>
 <p class="msg" id="msg">已保存</p>
 </div>
@@ -96,12 +97,15 @@ function setVal(i,v){
   var active=(D[i].login?1:0)+(D[i].kicked?1:0)+(D[i].risk?1:0);
   var turningOn=!D[i][v];
   if(turningOn&&active>=2)return;
+  if(v==="login")D[i].kicked=false;
+  if(v==="kicked")D[i].login=false;
   D[i][v]=!D[i][v];
   if(v==="risk"){
     if(D[i].risk){
-      var h=prompt("倒计时小时数",D[i].hrs||"168");
-      if(!h||isNaN(h)||h<=0){D[i].risk=false;build();updateStats();save();return}
-      D[i].hrs=parseFloat(h);D[i].t=Date.now()
+      var h=prompt("选择倒计时天数 (1-7)","7");
+      var d=parseInt(h);
+      if(!d||d<1||d>7){D[i].risk=false;build();updateStats();save();return}
+      D[i].hrs=d*24;D[i].t=Date.now()
     }else{D[i].t=0;D[i].hrs=0}
   }
   var row=document.getElementById("rw-"+i);
@@ -180,7 +184,34 @@ function exportData(){
   var a=document.createElement("a");
   a.href=URL.createObjectURL(b);
   a.download="生死簿_"+new Date().toISOString().slice(0,10)+".txt";
-  a.click()
+  a.click();
+  var j=new Blob([JSON.stringify(D,null,2)],{type:"application/json;charset=utf-8"});
+  var a2=document.createElement("a");
+  a2.href=URL.createObjectURL(j);
+  a2.download="生死簿_"+new Date().toISOString().slice(0,10)+".json";
+  a2.click()
+}
+function importData(){
+  var inp=document.createElement("input");
+  inp.type="file";inp.accept=".json";
+  inp.onchange=function(e){
+    var f=e.target.files[0];
+    if(!f)return;
+    var r=new FileReader();
+    r.onload=function(ev){
+      try{
+        var arr=JSON.parse(ev.target.result);
+        if(!Array.isArray(arr)){alert("格式错误");return}
+        D=arr;
+        localStorage.setItem("lb",JSON.stringify(D));
+        build();updateStats();
+        document.getElementById("msg").classList.add("show");
+        setTimeout(function(){document.getElementById("msg").classList.remove("show")},1500)
+      }catch(e){alert("导入失败: "+e.message)}
+    };
+    r.readAsText(f)
+  };
+  inp.click()
 }
 function resetAll(){
   if(!confirm("清空生死簿？"))return;
