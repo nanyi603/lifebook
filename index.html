@@ -179,7 +179,7 @@ function resetRisk(i){
 function cycleRank(i){
   if(!D[i])D[i]={n:"",login:false,kicked:false,risk:false,encrypted:false,showDetail:false,t:0,hrs:0,target:0,account:"",password:"",rank:0};
   var ranks=[0,3,6,9,15,20];var idx=ranks.indexOf(D[i].rank||0);
-  D[i].rank=ranks[(idx+1)%4];
+  D[i].rank=ranks[(idx+1)%6];
   var el=document.getElementById("rk-"+i);
   var cls=["","r3","r6","r9","r15","r20"];
   el.className="rank-btn "+cls[ranks.indexOf(D[i].rank)];
