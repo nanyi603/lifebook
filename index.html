@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>生死簿</title>
+<title>男一NB</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Microsoft YaHei',sans-serif;background:#0d0d0d;color:#ccc;min-height:100vh;padding:20px}
@@ -31,9 +31,9 @@ h1{text-align:center;margin-bottom:4px;font-size:28px;color:#c62828;letter-spaci
 .btn:hover{border-color:#555;color:#fff}
 .msg{text-align:center;margin-top:10px;font-size:13px;color:#4caf50;opacity:0;transition:opacity .3s}
 .msg.show{opacity:1}
-.toggle-detail{color:#555;font-size:13px;cursor:pointer;flex-shrink:0;width:16px;text-align:center;user-select:none}
+.toggle-detail{transition:transform .2s;color:#555;font-size:13px;cursor:pointer;flex-shrink:0;width:16px;text-align:center;user-select:none}
 .toggle-detail:hover{color:#ccc}
-.toggle-detail.open{color:#81c784}
+.toggle-detail.open{color:#81c784;transform:rotate(180deg)}
 .name-group{flex:2;display:flex;flex-direction:column;gap:3px;min-width:140px}
 .detail-row{display:none;gap:4px}
 .detail-row.show{display:flex}
@@ -45,7 +45,7 @@ h1{text-align:center;margin-bottom:4px;font-size:28px;color:#c62828;letter-spaci
 <body>
 <div class="container">
 <h1>生 死 簿</h1>
-<p class="subtitle">登录 / 被顶 / 高风险（七天倒计时）</p>
+<p class="subtitle">登 / 顶 / 高 / 加密 — 七天倒计时</p>
 <div class="stats">
   <span style="color:#81c784">登录 <strong id="login-count">0</strong></span>
   <span style="color:#ef5350">被顶 <strong id="kick-count">0</strong></span>
@@ -82,7 +82,7 @@ function build(){
     h+="<div class='"+rc+"' id='rw-"+i+"'>";
     var nc='num';if(d.risk)nc+=' risk-num';
     h+="<span class='"+nc+"' id='num-"+i+"'>"+(i+1)+"</span>";
-    h+="<span class='toggle-detail"+(d.showDetail?" open":"")+"' id='tg-"+i+"'>···</span>";
+    h+="<span class='toggle-detail"+(d.showDetail?" open":"")+"' id='tg-"+i+"'>▼</span>";
     h+="<div class='name-group'>";
     h+="<input class='name-input' id='nm-"+i+"' placeholder='人名' value='"+esc(d.n||"")+"'>";
     h+="<div class='detail-row"+(d.showDetail?" show":"")+"' id='dr-"+i+"'>";
@@ -91,10 +91,10 @@ function build(){
     h+="</div></div>";
     h+="<span class='timer' id='tm-"+i+"'></span>";
     h+="<div class='tag-group'>";
-    h+="<button class='tag login"+(d.login?" active":"")+"' id='l-"+i+"'>登录</button>";
-    h+="<button class='tag kicked"+(d.kicked?" active":"")+"' id='k-"+i+"'>被顶</button>";
+    h+="<button class='tag login"+(d.login?" active":"")+"' id='l-"+i+"'>登</button>";
+    h+="<button class='tag kicked"+(d.kicked?" active":"")+"' id='k-"+i+"'>顶</button>";
     h+="<button class='tag encrypted"+(d.encrypted?" active":"")+"' id='e-"+i+"'>加密</button>";
-    h+="<button class='tag risk"+(d.risk?" active":"")+"' id='r-"+i+"'>高风险</button>";
+    h+="<button class='tag risk"+(d.risk?" active":"")+"' id='r-"+i+"'>高</button>";
     h+="</div></div>";
   }
   l.innerHTML=h;
@@ -210,18 +210,18 @@ function save(){
 }
 function exportData(){
   save();
-  var txt="=== 生死簿 ===\n导出: "+new Date().toLocaleString()+"\n\n";
+  var txt="=== 男一NB ===\n导出: "+new Date().toLocaleString()+"\n\n";
   for(var i=0;i<T;i++){
     var d=D[i]||{},n=d.n||"(空)",v=[];
-    if(d.login)v.push("登录");
-    if(d.kicked)v.push("被顶");
+    if(d.login)v.push("登");
+    if(d.kicked)v.push("顶");
     if(d.encrypted)v.push("加密");
     if(d.risk){
       var s="高风险";
       if(d.t){var tgt2=d.target||(d.t+(d.hrs||168)*3600000);s+=" [到期: "+new Date(tgt2).toLocaleString()+"]"}
       v.push(s)
     }
-    if(v.length===0)v.push("未标记");
+    if(v.length===0)v.push("-");
     var extra="";
     if(d.account)extra+=" 账号:"+d.account;
     if(d.password)extra+=" 密码:"+d.password;
@@ -230,12 +230,12 @@ function exportData(){
   var b=new Blob([txt],{type:"text/plain;charset=utf-8"});
   var a=document.createElement("a");
   a.href=URL.createObjectURL(b);
-  a.download="生死簿_"+new Date().toISOString().slice(0,10)+".txt";
+  a.download="男一NB_"+new Date().toISOString().slice(0,10)+".txt";
   a.click();
   var j=new Blob([JSON.stringify(D,null,2)],{type:"application/json;charset=utf-8"});
   var a2=document.createElement("a");
   a2.href=URL.createObjectURL(j);
-  a2.download="生死簿_"+new Date().toISOString().slice(0,10)+".json";
+  a2.download="男一NB_"+new Date().toISOString().slice(0,10)+".json";
   a2.click()
 }
 function importData(){
@@ -261,7 +261,7 @@ function importData(){
   inp.click()
 }
 function resetAll(){
-  if(!confirm("清空生死簿？"))return;
+  if(!confirm("清空男一NB？"))return;
   D=[];
   localStorage.removeItem("lb");
   build();
