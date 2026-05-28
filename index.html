@@ -15,7 +15,7 @@ h1{text-align:center;margin-bottom:4px;font-size:28px;color:#c62828;letter-spaci
 .row{display:flex;align-items:center;gap:8px;padding:8px 10px;margin-bottom:3px;background:#111;border-radius:6px;border:1px solid #1a1a1a;font-size:13px}
 .row.risk{border-color:#4a0000;background:#1a0505}
 .num{color:#444;font-size:11px;width:20px;text-align:center;flex-shrink:0}.num.risk-num{color:#4caf50;cursor:pointer}
-.name-input{flex:2;padding:6px 8px;border:1px solid #222;border-radius:4px;background:#0a0a0a;color:#ccc;font-size:13px;outline:none;min-width:140px}
+.name-input{flex:1;padding:6px 8px;border:1px solid #222;border-radius:4px;background:#0a0a0a;color:#ccc;font-size:13px;outline:none}
 .name-input:focus{border-color:#c62828}
 .timer{color:#ff5252;font-size:12px;min-width:104px;text-align:center;font-family:'Consolas',monospace}
 .tag-group{display:flex;gap:2px;flex-shrink:0}
@@ -31,6 +31,15 @@ h1{text-align:center;margin-bottom:4px;font-size:28px;color:#c62828;letter-spaci
 .btn:hover{border-color:#555;color:#fff}
 .msg{text-align:center;margin-top:10px;font-size:13px;color:#4caf50;opacity:0;transition:opacity .3s}
 .msg.show{opacity:1}
+.toggle-detail{color:#555;font-size:13px;cursor:pointer;flex-shrink:0;width:16px;text-align:center;user-select:none}
+.toggle-detail:hover{color:#ccc}
+.toggle-detail.open{color:#81c784}
+.name-group{flex:2;display:flex;flex-direction:column;gap:3px;min-width:140px}
+.detail-row{display:none;gap:4px}
+.detail-row.show{display:flex}
+.detail-input{flex:1;padding:4px 6px;border:1px solid #222;border-radius:3px;background:#0a0a0a;color:#aaa;font-size:11px;outline:none;width:50%}
+.detail-input:focus{border-color:#c62828}
+.tag.encrypted.active{background:#1a237e;border-color:#3f51b5;color:#9fa8da}
 </style>
 </head>
 <body>
@@ -73,11 +82,18 @@ function build(){
     h+="<div class='"+rc+"' id='rw-"+i+"'>";
     var nc='num';if(d.risk)nc+=' risk-num';
     h+="<span class='"+nc+"' id='num-"+i+"'>"+(i+1)+"</span>";
+    h+="<span class='toggle-detail"+(d.showDetail?" open":"")+"' id='tg-"+i+"'>···</span>";
+    h+="<div class='name-group'>";
     h+="<input class='name-input' id='nm-"+i+"' placeholder='人名' value='"+esc(d.n||"")+"'>";
+    h+="<div class='detail-row"+(d.showDetail?" show":"")+"' id='dr-"+i+"'>";
+    h+="<input class='detail-input' id='ac-"+i+"' placeholder='账号' value='"+esc(d.account||"")+"'>";
+    h+="<input class='detail-input' id='pw-"+i+"' type='password' placeholder='密码' value='"+esc(d.password||"")+"'>";
+    h+="</div></div>";
     h+="<span class='timer' id='tm-"+i+"'></span>";
     h+="<div class='tag-group'>";
     h+="<button class='tag login"+(d.login?" active":"")+"' id='l-"+i+"'>登录</button>";
     h+="<button class='tag kicked"+(d.kicked?" active":"")+"' id='k-"+i+"'>被顶</button>";
+    h+="<button class='tag encrypted"+(d.encrypted?" active":"")+"' id='e-"+i+"'>加密</button>";
     h+="<button class='tag risk"+(d.risk?" active":"")+"' id='r-"+i+"'>高风险</button>";
     h+="</div></div>";
   }
@@ -86,20 +102,24 @@ function build(){
     (function(j){
       document.getElementById("l-"+j).onclick=function(){setVal(j,"login")};
       document.getElementById("k-"+j).onclick=function(){setVal(j,"kicked")};
+      document.getElementById("e-"+j).onclick=function(){setVal(j,"encrypted")};
       document.getElementById("r-"+j).onclick=function(){setVal(j,"risk")};
       document.getElementById("num-"+j).onclick=function(){resetRisk(j)};
+      document.getElementById("tg-"+j).onclick=function(){toggleDetail(j)};
     })(i)
   }
   updateAllTimers()
 }
 function setVal(i,v){
-  if(!D[i])D[i]={n:"",login:false,kicked:false,risk:false,t:0,hrs:0,target:0};
+  if(!D[i])D[i]={n:"",login:false,kicked:false,risk:false,encrypted:false,showDetail:false,t:0,hrs:0,target:0,account:"",password:""};
   var active=(D[i].login?1:0)+(D[i].kicked?1:0)+(D[i].risk?1:0);
   var turningOn=!D[i][v];
-  if(turningOn&&active>=2)return;
-  if(v==="login")D[i].kicked=false;
-  if(v==="kicked")D[i].login=false;
-  D[i][v]=!D[i][v];
+  if(turningOn&&active>=2&&v!=="encrypted")return;
+  if(v==="encrypted"){D[i].encrypted=!D[i].encrypted}else{
+    if(v==="login")D[i].kicked=false;
+    if(v==="kicked")D[i].login=false;
+    D[i][v]=!D[i][v]
+  }
   if(v==="risk"){
     if(D[i].risk){
       var td=new Date();td.setHours(0,0,0,0);
@@ -121,6 +141,7 @@ function setVal(i,v){
   if(D[i].risk)row.className+=" risk";
   document.getElementById("l-"+i).className="tag login"+(D[i].login?" active":"");
   document.getElementById("k-"+i).className="tag kicked"+(D[i].kicked?" active":"");
+  document.getElementById("e-"+i).className="tag encrypted"+(D[i].encrypted?" active":"");
   document.getElementById("r-"+i).className="tag risk"+(D[i].risk?" active":"");
   document.getElementById("num-"+i).className=D[i].risk?"num risk-num":"num";
   updateTimer(i);updateStats();save()
@@ -143,10 +164,20 @@ function resetRisk(i){
   if(!D[i]||!D[i].risk)return;
   D[i].risk=false;D[i].t=0;D[i].hrs=0;D[i].target=0;
   document.getElementById("rw-"+i).className="row";
+  document.getElementById("e-"+i).className="tag encrypted";
   document.getElementById("r-"+i).className="tag risk";
   document.getElementById("num-"+i).className="num";
   document.getElementById("tm-"+i).textContent="";
   updateStats();save()
+}
+function toggleDetail(i){
+  if(!D[i])D[i]={n:"",login:false,kicked:false,risk:false,encrypted:false,showDetail:false,t:0,hrs:0,target:0,account:"",password:""};
+  D[i].showDetail=!D[i].showDetail;
+  var dr=document.getElementById("dr-"+i);
+  var tg=document.getElementById("tg-"+i);
+  if(D[i].showDetail){dr.classList.add("show");tg.classList.add("open")}
+  else{dr.classList.remove("show");tg.classList.remove("open")};
+  save()
 }
 function updateAllTimers(){for(var i=0;i<T;i++)updateTimer(i)}
 function updateStats(){
@@ -164,9 +195,13 @@ function updateStats(){
 }
 function save(){
   for(var i=0;i<T;i++){
-    if(!D[i])D[i]={n:"",login:false,kicked:false,risk:false,t:0,hrs:0,target:0};
+    if(!D[i])D[i]={n:"",login:false,kicked:false,risk:false,encrypted:false,showDetail:false,t:0,hrs:0,target:0,account:"",password:""};
     var el=document.getElementById("nm-"+i);
-    if(el)D[i].n=el.value
+    if(el)D[i].n=el.value;
+    var ac=document.getElementById("ac-"+i);
+    if(ac)D[i].account=ac.value;
+    var pw=document.getElementById("pw-"+i);
+    if(pw)D[i].password=pw.value
   }
   localStorage.setItem("lb",JSON.stringify(D));
   var m=document.getElementById("msg");
@@ -180,13 +215,17 @@ function exportData(){
     var d=D[i]||{},n=d.n||"(空)",v=[];
     if(d.login)v.push("登录");
     if(d.kicked)v.push("被顶");
+    if(d.encrypted)v.push("加密");
     if(d.risk){
       var s="高风险";
       if(d.t){var tgt2=d.target||(d.t+(d.hrs||168)*3600000);s+=" [到期: "+new Date(tgt2).toLocaleString()+"]"}
       v.push(s)
     }
     if(v.length===0)v.push("未标记");
-    txt+=(i+1)+". "+n+" -> "+v.join("+")+"\n"
+    var extra="";
+    if(d.account)extra+=" 账号:"+d.account;
+    if(d.password)extra+=" 密码:"+d.password;
+    txt+=(i+1)+". "+n+" -> "+v.join("+")+extra+"\n"
   }
   var b=new Blob([txt],{type:"text/plain;charset=utf-8"});
   var a=document.createElement("a");
