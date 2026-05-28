@@ -34,7 +34,7 @@ h1{text-align:center;margin-bottom:4px;font-size:28px;color:#c62828;letter-spaci
 .toggle-detail{transition:transform .2s;color:#555;font-size:13px;cursor:pointer;flex-shrink:0;width:16px;text-align:center;user-select:none}
 .toggle-detail:hover{color:#ccc}
 .toggle-detail.open{color:#81c784;transform:rotate(180deg)}
-.name-group{flex:2;display:flex;flex-direction:column;gap:3px;min-width:140px}
+.name-group{flex:1;display:flex;flex-direction:column;gap:3px}
 .detail-row{display:none;gap:4px}
 .detail-row.show{display:flex}
 .detail-input{flex:1;padding:4px 6px;border:1px solid #222;border-radius:3px;background:#0a0a0a;color:#aaa;font-size:11px;outline:none;width:50%}
@@ -44,7 +44,7 @@ h1{text-align:center;margin-bottom:4px;font-size:28px;color:#c62828;letter-spaci
 </head>
 <body>
 <div class="container">
-<h1>生 死 簿</h1>
+<h1>男一NB</h1>
 <p class="subtitle">登 / 顶 / 高 / 加密 — 七天倒计时</p>
 <div class="stats">
   <span style="color:#81c784">登录 <strong id="login-count">0</strong></span>
@@ -133,6 +133,10 @@ function setVal(i,v){
       var c=parseInt(prompt(msg,"7"));
       if(!c||c<1||c>7){D[i].risk=false;build();updateStats();save();return}
       D[i].target=new Date(td.getTime()+c*86400000).getTime();
+      var tm=prompt('到期时间 (24小时制，默认23:59)','23:59');
+      var parts=tm?tm.split(':'):['23','59'];
+      var hh=parseInt(parts[0])||23,mm=parseInt(parts[1])||59;
+      if(hh>=0&&hh<24&&mm>=0&&mm<60)D[i].target+=hh*3600000+mm*60000
       D[i].t=Date.now()
     }else{D[i].t=0;D[i].target=0}
   }
