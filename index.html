@@ -84,7 +84,7 @@ function build(){
     h+="<span class='"+nc+"' id='num-"+i+"'>"+(i+1)+"</span>";
     h+="<span class='toggle-detail"+(d.showDetail?" open":"")+"' id='tg-"+i+"'>▼</span>";
     h+="<div class='name-group'>";
-    h+="<input class='name-input' id='nm-"+i+"' placeholder='人名' value='"+esc(d.n||"")+"'>";
+    h+="<input class='name-input' id='nm-"+i+"' placeholder='' value='"+esc(d.n||"")+"'>";
     h+="<div class='detail-row"+(d.showDetail?" show":"")+"' id='dr-"+i+"'>";
     h+="<input class='detail-input' id='ac-"+i+"' placeholder='账号' value='"+esc(d.account||"")+"'>";
     h+="<input class='detail-input' id='pw-"+i+"' type='password' placeholder='密码' value='"+esc(d.password||"")+"'>";
